@@ -2,18 +2,26 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
+// Subscriptions are paused. Pricing and checkout are closed to everyone.
+const isClosedRoute = createRouteMatcher([
+  '/pricing',
+  '/api/stripe/checkout',
+])
+
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/pricing',
   '/api/webhooks/stripe',
-  '/api/stripe/checkout',
 ])
 
 const isApiRoute = createRouteMatcher(['/api/query/(.*)', '/api/export/(.*)'])
 const isUserApiRoute = createRouteMatcher(['/api/user/(.*)'])
 
 export default clerkMiddleware(async (auth, request) => {
+  if (isClosedRoute(request)) {
+    return new NextResponse('Not found', { status: 404 })
+  }
+
   if (isPublicRoute(request)) return
 
   const { userId } = await auth.protect()
