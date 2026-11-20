@@ -24,16 +24,24 @@ UA = {"User-Agent": "SectorWindow-freshness-check/1.0"}
 
 
 def head(url):
-    """Return a short fingerprint of a remote file, or None if it does not exist."""
+    """Return a short fingerprint of a remote file, or None if it does not exist.
+
+    The fingerprint is the Last-Modified time. Some servers (the IRS one) report the file size
+    inconsistently between requests, so size is used only when there is no Last-Modified header.
+    """
     for method in ("HEAD", "GET"):
         req = urllib.request.Request(url, method=method, headers={**UA, **({"Range": "bytes=0-0"} if method == "GET" else {})})
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 h = r.headers
-                size = h.get("Content-Length") or (h.get("Content-Range", "").split("/")[-1] or "?")
-                if size == "?" and method == "HEAD":
-                    continue  # some servers omit the size on HEAD at random; ask again with a ranged GET
-                return f"{size}|{h.get('Last-Modified', '?')}"
+                if h.get("Last-Modified"):
+                    return h["Last-Modified"]
+                size = h.get("Content-Range", "").split("/")[-1] or h.get("Content-Length")
+                if size:
+                    return f"size:{size}"
+                if method == "HEAD":
+                    continue
+                return "exists"
         except urllib.error.HTTPError as e:
             if e.code in (403, 404):
                 return None
