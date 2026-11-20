@@ -1,5 +1,5 @@
 """
-DEJ Intelligence — Phase 2 Step 3: Signal Layer Update (Officer Signals)
+SectorWindow — Phase 2 Step 3: Signal Layer Update (Officer Signals)
 
 Extends the existing transition_scores table with Phase 2 signals derived
 from the officers table:

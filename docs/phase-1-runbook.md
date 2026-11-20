@@ -29,7 +29,7 @@ The loaders are Python (faster CSV streaming and easier batch handling than Node
 From the repo root:
 
 ```bash
-cd ~/path/to/dej-intelligence
+cd ~/path/to/sectorwindow
 
 # Create a venv so this doesn't pollute your system Python
 python3 -m venv .venv

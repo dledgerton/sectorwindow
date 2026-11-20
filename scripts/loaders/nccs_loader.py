@@ -1,5 +1,5 @@
 """
-NCCS Core Files loader for DEJ Intelligence.
+NCCS Core Files loader for SectorWindow.
 
 Pulls the harmonized NCCS Core Files (PZ for charities + 501CE, PF for
 private foundations), filters to EINs already in the `organizations`
@@ -465,7 +465,7 @@ def upsert_batch(supabase: Client, batch: list[dict]) -> None:
 # --- Main -----------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Load NCCS Core Files into DEJ Intelligence")
+    parser = argparse.ArgumentParser(description="Load NCCS Core Files into SectorWindow")
     parser.add_argument("--dry-run", action="store_true", help="Parse and count only; no DB writes")
     parser.add_argument("--limit", type=int, default=None, help="Stop after N matched rows (testing)")
     parser.add_argument("--core-file-type", choices=list(FILE_TEMPLATES), default=None,
@@ -487,7 +487,7 @@ def main() -> None:
     print("\n=== Assessing partial years via HEAD ===")
     started = time.time()
 
-    with httpx.Client(headers={"User-Agent": "DEJ-Intelligence-Loader/1.0"}) as http:
+    with httpx.Client(headers={"User-Agent": "SectorWindow-Loader/1.0"}) as http:
         partial_flags = assess_partial_years(http, specs)
 
         total_matched = 0

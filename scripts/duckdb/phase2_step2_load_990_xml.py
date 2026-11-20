@@ -1,5 +1,5 @@
 """
-DEJ Intelligence — Phase 2 Step 2: IRS Form 990 Part VII XML Loader
+SectorWindow — Phase 2 Step 2: IRS Form 990 Part VII XML Loader
 
 Downloads IRS TEOS annual index CSVs, filters to 4-state market orgs already
 in our organizations table, probes and downloads monthly ZIP batches for the
@@ -78,7 +78,7 @@ log = logging.getLogger("dej.phase2")
 # ---------------------------------------------------------------------------
 
 IRS_TEOS_BASE   = "https://apps.irs.gov/pub/epostcard/990/xml"
-INDEX_YEARS     = list(range(2017, 2025))   # 2017-2023 inclusive
+INDEX_YEARS     = list(range(2017, 2026))   # 2017-2025 inclusive; add 2026 once the IRS posts it
 ZIP_MONTHS      = [f"{m:02d}" for m in range(1, 13)]
 ZIP_SUFFIXES    = ["A", "B", "C", "D"]     # probe until 404
 
@@ -154,7 +154,7 @@ def fetch_url(url: str, retries: int = 3, timeout: int = 60) -> Optional[bytes]:
         try:
             req = urllib.request.Request(
                 url,
-                headers={"User-Agent": "DEJ-Intelligence/2.0 (nonprofit data research)"},
+                headers={"User-Agent": "SectorWindow/2.0 (nonprofit data research)"},
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return resp.read()
@@ -176,7 +176,7 @@ def head_exists(url: str, timeout: int = 15) -> bool:
         req = urllib.request.Request(
             url,
             method="HEAD",
-            headers={"User-Agent": "DEJ-Intelligence/2.0 (nonprofit data research)"},
+            headers={"User-Agent": "SectorWindow/2.0 (nonprofit data research)"},
         )
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status == 200
@@ -814,7 +814,7 @@ def main() -> None:
     target_eins   = load_target_eins(con)
     processed_ids = load_processed_object_ids(con) if args.resume else set()
 
-    log.info(f"Target EINs (4-state): {len(target_eins):,}")
+    log.info(f"Target EINs (all states in organizations): {len(target_eins):,}")
     if args.resume:
         log.info(f"Already processed:     {len(processed_ids):,}")
 

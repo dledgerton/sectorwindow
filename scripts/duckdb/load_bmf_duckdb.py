@@ -1,5 +1,5 @@
 """
-IRS Business Master File loader → DuckDB for DEJ Intelligence PoC.
+IRS Business Master File loader → DuckDB for SectorWindow PoC.
 
 Adapted from scripts/loaders/load_bmf.py.
 Same source, same filters, same transforms — DuckDB target instead of Supabase.
@@ -30,7 +30,7 @@ BMF_REGIONS = {
     "eo4": "https://www.irs.gov/pub/irs-soi/eo4.csv",
 }
 
-TARGET_STATES = {"DC", "MD", "VA", "MN", "NY"}
+TARGET_STATES = {"DC", "MD", "VA", "MN", "NY", "DE", "PA", "NJ"}
 TARGET_SUBSECTIONS = {3, 6}
 BATCH_SIZE = 1000
 DEFAULT_DB_PATH = "data/dej_intelligence.duckdb"
@@ -84,7 +84,7 @@ def stream_csv(url: str, region: str) -> Iterator[dict]:
         "GET", url,
         timeout=120.0,
         follow_redirects=True,
-        headers={"User-Agent": "DEJ-Intelligence-Loader/1.0"},
+        headers={"User-Agent": "SectorWindow-Loader/1.0"},
     ) as response:
         response.raise_for_status()
         response.encoding = "latin-1"
@@ -142,7 +142,7 @@ def transform(row: dict):
 
 
 def upsert_batch(con: duckdb.DuckDBPyConnection, batch: list[dict]) -> None:
-    """Upsert org records into DuckDB using INSERT ... ON CONFLICT DO UPDATE."""
+    """Add new org records to DuckDB (INSERT ... ON CONFLICT DO NOTHING)."""
     if not batch:
         return
     cols = [
@@ -155,16 +155,19 @@ def upsert_batch(con: duckdb.DuckDBPyConnection, batch: list[dict]) -> None:
     placeholders = ", ".join(["?"] * len(cols))
     col_list = ", ".join(cols)
     update_set = ", ".join(f"{c} = excluded.{c}" for c in cols if c != "ein")
+    # Insert-only: DuckDB cannot update rows in a table that other tables
+    # (filings, officers, ...) reference by foreign key, so existing orgs are
+    # left as they are and only new EINs are added.
     sql = (
         f"insert into organizations ({col_list}) values ({placeholders}) "
-        f"on conflict (ein) do update set {update_set}, updated_at = now()"
+        f"on conflict (ein) do nothing"
     )
     rows_as_tuples = [tuple(r.get(c) for c in cols) for r in batch]
     con.executemany(sql, rows_as_tuples)
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Load IRS BMF into DEJ Intelligence DuckDB")
+    p = argparse.ArgumentParser(description="Load IRS BMF into SectorWindow DuckDB")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--region", choices=list(BMF_REGIONS), default=None)

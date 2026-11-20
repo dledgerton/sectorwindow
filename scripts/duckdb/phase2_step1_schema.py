@@ -1,5 +1,5 @@
 """
-DEJ Intelligence — Phase 2 Step 1: Officers Table Schema Migration
+SectorWindow — Phase 2 Step 1: Officers Table Schema Migration
 
 Adds the officers table and supporting indexes to the existing DuckDB database.
 Run this once before the Part VII XML loader.

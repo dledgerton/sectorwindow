@@ -1,5 +1,5 @@
 """
-DEJ Intelligence — Phase 3 NTEE Classifier
+SectorWindow — Phase 3 NTEE Classifier
 ===========================================
 Classifies nonprofit organizations into NTEE major categories using Claude.
 Processes orgs in batches of 50 to minimize API calls.
@@ -318,7 +318,7 @@ def print_report(con: duckdb.DuckDBPyConnection):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DEJ Intelligence Phase 3 NTEE Classifier")
+    parser = argparse.ArgumentParser(description="SectorWindow Phase 3 NTEE Classifier")
     parser.add_argument("--dry-run", action="store_true", help="Preview without API calls or DB writes")
     parser.add_argument("--null-only", action="store_true", default=True, help="Only classify orgs with null NTEE (default)")
     parser.add_argument("--all", action="store_true", help="Classify all orgs including those with existing NTEE")
@@ -333,7 +333,7 @@ def main():
         log.error("ANTHROPIC_API_KEY not found in environment. Check .env file.")
         return
 
-    log.info("DEJ Intelligence — Phase 3 NTEE Classifier")
+    log.info("SectorWindow — Phase 3 NTEE Classifier")
     log.info(f"Database: {DB_PATH}")
     if args.dry_run:
         log.info("Mode: DRY RUN")

@@ -1,5 +1,5 @@
 """
-NCCS Core Files loader → DuckDB for DEJ Intelligence PoC.
+NCCS Core Files loader → DuckDB for SectorWindow PoC.
 
 Adapted from scripts/loaders/nccs_loader.py. Reads cached NCCS files,
 filters to EINs in the DuckDB organizations table, writes filings rows.
@@ -29,8 +29,19 @@ import httpx
 from dotenv import load_dotenv
 
 NCCS_S3_BASE = "https://nccsdata.s3.amazonaws.com/harmonized/core"
+# Current NCCS layout (organized by tax year, published through tax year 2024).
+# https://urbaninstitute.github.io/nccs/catalogs/catalog-core.html
+NCCS_NEW_BASE = "https://nccsdata.s3.us-east-1.amazonaws.com/processed/core"
 
 FILE_TEMPLATES = {
+    "NEW_990": (
+        f"{NCCS_NEW_BASE}/{{year}}/990/core_{{year}}_990.csv",
+        "NEW-990", "nccs_core_990", "990",
+    ),
+    "NEW_990EZ": (
+        f"{NCCS_NEW_BASE}/{{year}}/990ez/core_{{year}}_990ez.csv",
+        "NEW-990EZ", "nccs_core_990ez", "990EZ",
+    ),
     "PZ_CHARITIES": (
         f"{NCCS_S3_BASE}/501c3-pz/CORE-{{year}}-501C3-CHARITIES-PZ-HRMN.csv",
         "501C3-CHARITIES-PZ", "nccs_pz_charities", "990",
@@ -45,7 +56,13 @@ FILE_TEMPLATES = {
     ),
 }
 
+# Legacy "harmonized" types stay available via --core-file-type but are no longer
+# part of the default run (they stop at tax year 2022 and are already loaded).
+DEFAULT_TYPES = ["NEW_990", "NEW_990EZ"]
+
 YEAR_RANGES = {
+    "NEW_990":      list(range(2022, 2027)),
+    "NEW_990EZ":    list(range(2022, 2027)),
     "PZ_CHARITIES": list(range(2016, 2023)),
     "PZ_501CE":     list(range(2016, 2023)),
     "PF":           list(range(2019, 2024)),
@@ -83,6 +100,25 @@ PF_FIELDS = {
     "contributions":     ["PF_01_REV_CONTR_REC_BOOKS"],
     "outnccs":           ["OUTNCCS"],
 }
+
+# Column names in the current NCCS layout (processed/core/<year>/990 and 990ez).
+# Lowercase snake_case; no F9_ prefixes and no OUTNCCS flag.
+NEW_FIELDS = {
+    "ein":               ["ein"],
+    "tax_year":          ["tax_year"],
+    "period_end":        ["tax_period"],
+    "total_revenue":     ["total_revenue"],
+    "total_expenses":    ["total_expenses"],
+    "total_assets":      ["total_assets_eoy"],
+    "total_liabilities": ["total_liabilities_eoy"],
+    "net_assets_eoy":    ["total_net_assets_eoy"],
+    "contributions":     ["total_contributions"],
+    "program_revenue":   ["program_service_revenue"],
+    "comp_employees":    ["compensation_current_officers"],
+    "outnccs":           [],
+}
+
+SCHEMAS = {"PZ": PZ_FIELDS, "PF": PF_FIELDS, "NEW": NEW_FIELDS}
 
 REQUIRED_PROBE = ["ein", "total_revenue"]
 
@@ -178,13 +214,15 @@ class FileSpec:
         return CACHE_DIR / f"CORE-{self.year}-{self.label}-HRMN.csv"
 
 
-def build_specs(types: list = None) -> list:
-    selected = types or list(FILE_TEMPLATES.keys())
+def build_specs(types: list = None, years: list = None) -> list:
+    selected = types or DEFAULT_TYPES
     specs = []
     for cft in selected:
         url_tmpl, label, source_value, form_type = FILE_TEMPLATES[cft]
-        schema_key = "PF" if cft == "PF" else "PZ"
+        schema_key = "PF" if cft == "PF" else ("NEW" if cft.startswith("NEW_") else "PZ")
         for year in YEAR_RANGES[cft]:
+            if years and year not in years:
+                continue
             specs.append(FileSpec(
                 core_file_type=cft, schema_key=schema_key, year=year,
                 url=url_tmpl.format(year=year), label=label,
@@ -246,6 +284,35 @@ def download_to_cache(client: httpx.Client, spec: FileSpec, refresh: bool = Fals
         return False
 
 
+def probe_headers_only(client: httpx.Client, specs: list) -> None:
+    """Fetch only the first ~64 KB of each file and report which canonical fields
+    resolve to a column. Nothing is written to the database or the cache."""
+    for spec in specs:
+        schema = SCHEMAS[spec.schema_key]
+        print(f"\n=== PROBE {spec.core_file_type} {spec.year} ===")
+        print(f"  {spec.url}")
+        try:
+            r = client.get(spec.url, headers={"Range": "bytes=0-65535"},
+                           timeout=60.0, follow_redirects=True)
+        except httpx.HTTPError as e:
+            print(f"  ! request failed: {e}")
+            continue
+        if r.status_code not in (200, 206):
+            print(f"  ! HTTP {r.status_code}")
+            continue
+        first_line = r.content.decode("utf-8", errors="replace").splitlines()[0]
+        headers = next(csv.reader([first_line]))
+        lower = {h.lower() for h in headers}
+        print(f"  {len(headers)} columns in header")
+        print(f"  Header: {headers}")
+        for canon, candidates in schema.items():
+            hit = next((c for c in candidates if c.lower() in lower), None)
+            print(f"  {'OK     ' if hit else 'MISSING'} {canon:<18} {hit or candidates}")
+        extras = [h for h in headers if any(t in h.upper() for t in
+                  ("EIN", "TAX_YEAR", "REV_TOT", "EXP_TOT", "ASSET_TOT", "LIAB_TOT", "NAFB", "COMP"))]
+        print(f"  Possibly relevant columns: {extras[:40]}")
+
+
 def probe_schema(cache_path: Path, schema: dict):
     encoding = "utf-8"
     try:
@@ -270,7 +337,7 @@ def probe_schema(cache_path: Path, schema: dict):
 
 
 def parse_file(spec: FileSpec, partial: bool, bmf_eins: set, encoding: str) -> Iterator[dict]:
-    schema = PF_FIELDS if spec.schema_key == "PF" else PZ_FIELDS
+    schema = SCHEMAS[spec.schema_key]
     with open(spec.cache_path, "r", encoding=encoding, newline="") as f:
         reader = csv.DictReader(f)
         for raw in reader:
@@ -299,7 +366,7 @@ def parse_file(spec: FileSpec, partial: bool, bmf_eins: set, encoding: str) -> I
                 "program_revenue": None,
                 "comp_employees": None,
             }
-            if spec.schema_key == "PZ":
+            if spec.schema_key in ("PZ", "NEW"):
                 row["program_revenue"] = safe_int(find_field(raw, schema["program_revenue"]))
                 row["comp_employees"] = safe_int(find_field(raw, schema["comp_employees"]))
             yield row
@@ -325,6 +392,9 @@ def dedup_batch(batch: list) -> list:
     return list(by_key.values())
 
 
+INSERT_ONLY = False  # set by --insert-only; skips rows whose (ein, tax_year, form_type) already exists
+
+
 def upsert_batch(con: duckdb.DuckDBPyConnection, batch: list) -> None:
     deduped = dedup_batch(batch)
     if not deduped:
@@ -338,21 +408,36 @@ def upsert_batch(con: duckdb.DuckDBPyConnection, batch: list) -> None:
     placeholders = ", ".join(["?"] * len(cols))
     col_list = ", ".join(cols)
     update_set = ", ".join(f"{c} = excluded.{c}" for c in cols if c not in ("ein", "tax_year", "form_type"))
-    sql = (
-        f"insert into filings ({col_list}) values ({placeholders}) "
-        f"on conflict (ein, tax_year, form_type) do update set {update_set}, updated_at = now()"
-    )
+    if INSERT_ONLY:
+        # Works around a DuckDB internal error when ON CONFLICT DO UPDATE touches many existing rows
+        sql = (
+            f"insert into filings ({col_list}) values ({placeholders}) "
+            f"on conflict (ein, tax_year, form_type) do nothing"
+        )
+    else:
+        sql = (
+            f"insert into filings ({col_list}) values ({placeholders}) "
+            f"on conflict (ein, tax_year, form_type) do update set {update_set}, updated_at = now()"
+        )
     rows_as_tuples = [tuple(r.get(c) for c in cols) for r in deduped]
     con.executemany(sql, rows_as_tuples)
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Load NCCS Core Files into DEJ Intelligence DuckDB")
+    p = argparse.ArgumentParser(description="Load NCCS Core Files into SectorWindow DuckDB")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--insert-only", action="store_true",
+                   help="Only add new filings; leave existing rows untouched")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--core-file-type", choices=list(FILE_TEMPLATES), default=None)
     p.add_argument("--refresh-cache", action="store_true")
+    p.add_argument("--years", type=int, nargs="+", default=None,
+                   help="Only these tax years, e.g. --years 2024")
+    p.add_argument("--probe", action="store_true",
+                   help="Print each file's header and field matches, then exit (no download, no DB writes)")
     args = p.parse_args()
+    global INSERT_ONLY
+    INSERT_ONLY = args.insert_only
 
     db_path = get_db_path()
     print(f"Database: {db_path}")
@@ -364,13 +449,19 @@ def main() -> None:
         return
 
     types = [args.core_file_type] if args.core_file_type else None
-    specs = build_specs(types)
+    specs = build_specs(types, args.years)
     print(f"\nBuilt {len(specs)} file specs")
+
+    if args.probe:
+        with httpx.Client(headers={"User-Agent": "SectorWindow-Loader/1.0"}) as http:
+            probe_headers_only(http, specs)
+        con.close()
+        return
 
     print("\n=== Assessing partial years via HEAD ===")
     started = time.time()
 
-    with httpx.Client(headers={"User-Agent": "DEJ-Intelligence-Loader/1.0"}) as http:
+    with httpx.Client(headers={"User-Agent": "SectorWindow-Loader/1.0"}) as http:
         partial_flags = assess_partial_years(http, specs)
 
         total_matched = 0
@@ -389,7 +480,7 @@ def main() -> None:
             if not download_to_cache(http, spec, refresh=args.refresh_cache):
                 files_skipped += 1
                 continue
-            schema = PF_FIELDS if spec.schema_key == "PF" else PZ_FIELDS
+            schema = SCHEMAS[spec.schema_key]
             ok, missing, encoding = probe_schema(spec.cache_path, schema)
             if not ok:
                 print(f"    ! SCHEMA PROBE FAILED — missing: {missing}")

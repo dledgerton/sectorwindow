@@ -11,3 +11,12 @@ data/*.duckdb
 .next/
 .vercel
 data/*.wal
+
+.venv/
+__pycache__/
+*.pyc
+
+# Local backups and tool settings
+*.bak-*
+.claude/
+backtest/outputs/

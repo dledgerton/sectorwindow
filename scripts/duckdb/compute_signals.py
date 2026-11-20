@@ -1,5 +1,5 @@
 """
-DEJ Intelligence — Phase 1 Step 3: Transition Signal Layer
+SectorWindow — Phase 1 Step 3: Transition Signal Layer
 
 Builds the signal layer on top of BMF (organizations) + NCCS Core (filings)
 in DuckDB. Three DuckDB views compute the financial signals; a materialization
@@ -489,7 +489,7 @@ def validate_known_orgs(con: duckdb.DuckDBPyConnection, scored: list[dict]) -> N
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="DEJ Intelligence — compute transition signal scores")
+    p = argparse.ArgumentParser(description="SectorWindow — compute transition signal scores")
     p.add_argument("--dry-run",       action="store_true", help="Compute but don't write to DB")
     p.add_argument("--ein",           default=None,        help="Score a single EIN")
     p.add_argument("--validate-only", action="store_true", help="Re-run known_orgs check only")

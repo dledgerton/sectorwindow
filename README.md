@@ -35,14 +35,14 @@ You need three things: this repo on GitHub, a Supabase project, and a working de
 ### 1. Push to GitHub
 
 ```bash
-cd ~/path/to/dej-intelligence
+cd ~/path/to/sectorwindow
 git init
 git add .
 git commit -m "Phase 0 scaffold"
 
 # Create the private repo on github.com/dledgerton (UI is fine)
 git branch -M main
-git remote add origin git@github.com:dledgerton/dej-intelligence.git
+git remote add origin git@github.com:dledgerton/sectorwindow.git
 git push -u origin main
 ```
 
@@ -161,7 +161,7 @@ Estimated 20 hours across 2–3 sessions.
 - **Billing:** Stripe (Checkout + Customer Portal)
 - **Email:** Resend (transactional) + Beehiiv (marketing)
 - **Background jobs:** Inngest
-- **Hosting:** Vercel
+- **Hosting:** Railway (container-based; Vercel fails on the DuckDB native bindings)
 
 ---
 

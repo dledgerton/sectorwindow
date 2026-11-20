@@ -1,5 +1,5 @@
 """
-IRS Business Master File loader for DEJ Intelligence.
+IRS Business Master File loader for SectorWindow.
 
 Pulls the four regional Exempt Organization (EO) BMF files from the IRS,
 filters to target geographies and subsection codes, maps fields to the
@@ -176,7 +176,7 @@ def stream_csv(url: str, region: str) -> Iterator[dict[str, str]]:
         url,
         timeout=120.0,
         follow_redirects=True,
-        headers={"User-Agent": "DEJ-Intelligence-Loader/1.0"},
+        headers={"User-Agent": "SectorWindow-Loader/1.0"},
     ) as response:
         response.raise_for_status()
 
@@ -264,7 +264,7 @@ def upsert_batch(supabase: Client, batch: list[dict]) -> None:
 # --- Main -----------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Load IRS BMF into DEJ Intelligence")
+    parser = argparse.ArgumentParser(description="Load IRS BMF into SectorWindow")
     parser.add_argument("--dry-run", action="store_true", help="Parse and count only; no DB writes")
     parser.add_argument("--limit", type=int, default=None, help="Stop after N matching rows (testing)")
     parser.add_argument("--region", choices=list(BMF_REGIONS), default=None, help="Load only one region")

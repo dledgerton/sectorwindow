@@ -1,5 +1,5 @@
 """
-DuckDB schema setup for DEJ Intelligence PoC.
+DuckDB schema setup for SectorWindow PoC.
 Mirrors Supabase schema (organizations + filings) for clean migration back later.
 SaaS tables (user_profiles, watchlists, briefs, etc.) stay in Supabase.
 """
@@ -88,7 +88,8 @@ create table if not exists filings (
   source            text default 'irs_efile'
                     check (source in (
                       'irs_efile','nccs','nccs_pz_charities','nccs_pz_501ce',
-                      'nccs_pf','propublica','manual'
+                      'nccs_pf','nccs_core_990','nccs_core_990ez',
+                      'propublica','manual'
                     )),
   source_url        text,
   raw_xml_url       text,

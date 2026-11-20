@@ -1,6 +1,6 @@
 import os
 """
-DEJ Intelligence — Phase 2 Score Correction
+SectorWindow — Phase 2 Score Correction
 ============================================
 Problem: XML filing coverage is sparse (meaningful data only 2019-2021).
 Orgs appearing in only 1-2 XML years are getting high transition risk scores
@@ -243,14 +243,14 @@ def print_report(con: duckdb.DuckDBPyConnection):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DEJ Intelligence Phase 2 Score Correction")
+    parser = argparse.ArgumentParser(description="SectorWindow Phase 2 Score Correction")
     parser.add_argument("--dry-run", action="store_true",
                         help="Calculate corrections without writing to DB")
     parser.add_argument("--report", action="store_true",
                         help="Print summary report after correction")
     args = parser.parse_args()
 
-    log.info("DEJ Intelligence — Phase 2 Score Correction")
+    log.info("SectorWindow — Phase 2 Score Correction")
     log.info(f"Database: {DB_PATH}")
     if args.dry_run:
         log.info("Mode: DRY RUN")
