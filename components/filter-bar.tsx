@@ -8,6 +8,9 @@ const STATE_OPTIONS = [
   { value: "VA", label: "Virginia" },
   { value: "MN", label: "Minnesota" },
   { value: "NY", label: "New York" },
+  { value: "DE", label: "Delaware" },
+  { value: "PA", label: "Pennsylvania" },
+  { value: "NJ", label: "New Jersey" },
 ]
 
 const NTEE_OPTIONS = [

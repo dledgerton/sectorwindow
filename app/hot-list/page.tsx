@@ -4,7 +4,7 @@ import { Nav } from "@/components/nav"
 import { OrgTable } from "@/components/org-table"
 import { SaveSearchButton } from "@/components/save-search-button"
 
-const STATE_OPTIONS = ["DC", "MD", "VA", "MN", "NY"]
+const STATE_OPTIONS = ["DC", "MD", "VA", "MN", "NY", "DE", "PA", "NJ"]
 
 export default function HotListPage() {
   const [states, setStates] = useState<string[]>(["DC", "MD", "VA"])

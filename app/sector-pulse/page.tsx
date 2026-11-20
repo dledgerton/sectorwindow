@@ -5,7 +5,7 @@ import { Nav } from "@/components/nav"
 import { formatCurrency } from "@/lib/utils"
 import { SaveSearchButton } from "@/components/save-search-button"
 
-const STATE_OPTIONS = ["DC", "MD", "VA", "MN", "NY"]
+const STATE_OPTIONS = ["DC", "MD", "VA", "MN", "NY", "DE", "PA", "NJ"]
 
 const NTEE_OPTIONS: { code: string; label: string }[] = [
   { code: "A", label: "Arts, Culture & Humanities" },
