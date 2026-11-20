@@ -31,6 +31,8 @@ def head(url):
             with urllib.request.urlopen(req, timeout=30) as r:
                 h = r.headers
                 size = h.get("Content-Length") or (h.get("Content-Range", "").split("/")[-1] or "?")
+                if size == "?" and method == "HEAD":
+                    continue  # some servers omit the size on HEAD at random; ask again with a ranged GET
                 return f"{size}|{h.get('Last-Modified', '?')}"
         except urllib.error.HTTPError as e:
             if e.code in (403, 404):
