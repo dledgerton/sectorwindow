@@ -22,3 +22,7 @@ __pycache__/
 backtest/outputs/
 data/freshness_state.json
 logs/
+
+# Build and scratch output
+tsconfig.tsbuildinfo
+Claude outputs/

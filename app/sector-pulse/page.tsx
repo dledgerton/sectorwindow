@@ -49,7 +49,7 @@ export default function SectorPulsePage() {
             <h1 className="font-serif text-3xl text-navy">Sector Pulse</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Year-by-year aggregate trends for a sector in your geography. Use
-              this to pitch secor expertise.
+              this to pitch sector expertise.
             </p>
           </div>
           {searched && years.length > 0 && (
