@@ -20,3 +20,5 @@ __pycache__/
 *.bak-*
 .claude/
 backtest/outputs/
+data/freshness_state.json
+logs/
