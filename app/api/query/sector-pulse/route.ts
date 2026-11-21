@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     LEFT JOIN transition_scores ts ON ts.ein = f.ein
     WHERE
       o.state IN (${statePlaceholders})
-      AND LEFT(o.ntee_code, 1) IN (${nteePlaceholders})
+      AND LEFT(COALESCE(o.ntee_code, o.ntee_code_classified), 1) IN (${nteePlaceholders})
       AND f.tax_year BETWEEN ? AND ?
     GROUP BY f.tax_year
     ORDER BY f.tax_year ASC

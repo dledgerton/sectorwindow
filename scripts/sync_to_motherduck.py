@@ -42,14 +42,29 @@ def cols(table):
 
 
 # 1. organizations: add new EINs, refresh the classifier columns on existing ones
+NTEE_COLS = ("ntee_code_classified", "ntee_category_classified", "ntee_confidence", "ntee_reason", "ntee_classified_at")
 org_cols = cols("organizations")
+missing_ntee = [c for c in NTEE_COLS if c not in org_cols]
+if missing_ntee:
+    local_types = dict(con.execute(
+        "select column_name, data_type from information_schema.columns "
+        "where table_catalog='local' and table_name='organizations'").fetchall())
+    log.warning(f"MotherDuck organizations is missing {len(missing_ntee)} classifier column(s): {', '.join(missing_ntee)}")
+    if not DRY:
+        for c in missing_ntee:
+            if c in local_types:
+                con.execute(f"alter table organizations add column {c} {local_types[c]}")
+                log.info(f"  added column {c} ({local_types[c]})")
+        org_cols = cols("organizations")
 cl = ", ".join(org_cols)
 new_orgs = con.execute("select count(*) from local.organizations where ein not in (select ein from organizations)").fetchone()[0]
 log.info(f"organizations: {new_orgs:,} new EINs to add")
 if new_orgs and not DRY:
     con.execute(f"insert into organizations ({cl}) select {cl} from local.organizations where ein not in (select ein from organizations)")
 
-ntee_cols = [c for c in ("ntee_code_classified", "ntee_category_classified", "ntee_confidence", "ntee_reason", "ntee_classified_at") if c in org_cols]
+ntee_cols = [c for c in NTEE_COLS if c in org_cols]
+if DRY and missing_ntee:
+    log.info("organizations: dry run, so the missing columns were not added; a real run adds them and fills them in")
 if ntee_cols:
     cond = " or ".join(f"m.{c} is distinct from l.{c}" for c in ntee_cols)
     stale = con.execute(f"select count(*) from organizations m join local.organizations l using (ein) where {cond}").fetchone()[0]

@@ -14,6 +14,7 @@ type OrgRow = {
   state: string
   ntee_code: string
   ntee_category: string
+  ntee_ai?: boolean | null
   total_revenue: number | null
   score: number | null
   tier: string | null
@@ -135,7 +136,7 @@ export function OrgTable({
               </td>
               <td className="px-4 py-3">
                 <span
-                  title={row.ntee_code ? `${row.ntee_code} \u2014 ${nteeLabel(row.ntee_code) ?? row.ntee_category ?? ""}` : undefined}
+                  title={row.ntee_code ? `${row.ntee_code} \u2014 ${nteeLabel(row.ntee_code) ?? row.ntee_category ?? ""}${row.ntee_ai ? " (AI-assigned)" : ""}` : undefined}
                   className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium"
                 >
                   {row.ntee_code || "--"}

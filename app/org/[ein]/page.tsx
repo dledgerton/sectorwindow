@@ -135,7 +135,10 @@ export default function OrgProfilePage() {
                   {org.ntee_code}
                 </span>
                 {org.ntee_category && (
-                  <span className="ml-2 text-muted-foreground">{org.ntee_category}</span>
+                  <span className="ml-2 text-muted-foreground">
+                    {org.ntee_category}
+                    {org.ntee_ai ? " (AI-assigned)" : ""}
+                  </span>
                 )}
               </p>
             </div>

@@ -18,7 +18,8 @@ const EinSchema = z.string().regex(/^\d{9}$/, 'EIN must be 9 digits')
 const HEADER_SQL = `
 SELECT
   o.ein, o.name, o.city, o.state, o.zip,
-  o.ntee_code, o.ntee_category, o.ruling_date,
+  COALESCE(o.ntee_code, o.ntee_code_classified) AS ntee_code, COALESCE(o.ntee_category, o.ntee_category_classified) AS ntee_category,
+  (o.ntee_code IS NULL AND o.ntee_code_classified IS NOT NULL) AS ntee_ai, o.ruling_date,
   o.last_filing_year, o.asset_amount, o.income_amount,
   ts.score,
   ts.total_score_v2,

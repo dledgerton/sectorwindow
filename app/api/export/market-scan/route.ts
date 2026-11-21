@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
   const statePlaceholders = states.map(() => '?').join(', ')
   const nteeClause = ntee_major.length > 0
-    ? `AND LEFT(o.ntee_code, 1) IN (${ntee_major.map(() => '?').join(', ')})`
+    ? `AND LEFT(COALESCE(o.ntee_code, o.ntee_code_classified), 1) IN (${ntee_major.map(() => '?').join(', ')})`
     : ''
 
   const SQL = `
@@ -48,8 +48,9 @@ export async function GET(req: NextRequest) {
       o.name,
       o.city,
       o.state,
-      o.ntee_code,
-      o.ntee_category,
+      COALESCE(o.ntee_code, o.ntee_code_classified) AS ntee_code,
+      COALESCE(o.ntee_category, o.ntee_category_classified) AS ntee_category,
+      (o.ntee_code IS NULL AND o.ntee_code_classified IS NOT NULL) AS ntee_ai,
       f.tax_year,
       f.total_revenue,
       f.total_expenses,
