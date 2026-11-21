@@ -5,6 +5,7 @@ import { formatCurrency, formatEIN } from "@/lib/utils"
 import { ScoreBadge } from "./score-badge"
 import { SignalChips } from "./signal-chips"
 import { SaveOrgButton } from "./save-org-button"
+import { nteeLabel } from "@/lib/ntee"
 
 type OrgRow = {
   ein: string
@@ -133,7 +134,10 @@ export function OrgTable({
                 {row.city}, {row.state}
               </td>
               <td className="px-4 py-3">
-                <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">
+                <span
+                  title={row.ntee_code ? `${row.ntee_code} \u2014 ${nteeLabel(row.ntee_code) ?? row.ntee_category ?? ""}` : undefined}
+                  className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium"
+                >
                   {row.ntee_code || "--"}
                 </span>
               </td>

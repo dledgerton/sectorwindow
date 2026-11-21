@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { NTEE_OPTIONS } from "@/lib/ntee"
 
 const STATE_OPTIONS = [
   { value: "DC", label: "DC" },
@@ -11,10 +12,6 @@ const STATE_OPTIONS = [
   { value: "DE", label: "Delaware" },
   { value: "PA", label: "Pennsylvania" },
   { value: "NJ", label: "New Jersey" },
-]
-
-const NTEE_OPTIONS = [
-  "A","B","C","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","W","X","Y",
 ]
 
 const REVENUE_OPTIONS = [
@@ -84,23 +81,39 @@ export function FilterBar({
 
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Sector (NTEE)
+          Sector (NTEE, hover for label)
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {NTEE_OPTIONS.map((n) => (
+          {NTEE_OPTIONS.map(({ code, label }) => (
             <button
-              key={n}
-              onClick={() => toggleNtee(n)}
+              key={code}
+              onClick={() => toggleNtee(code)}
+              title={`${code} \u2014 ${label}`}
               className={`rounded border px-2 py-0.5 text-xs font-medium transition ${
-                ntee.includes(n)
+                ntee.includes(code)
                   ? "border-teal bg-teal/10 text-navy"
                   : "border-border text-muted-foreground hover:border-teal/40"
               }`}
             >
-              {n}
+              {code}
             </button>
           ))}
         </div>
+        {ntee.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            {ntee.map((code) => {
+              const match = NTEE_OPTIONS.find((n) => n.code === code)
+              return match ? (
+                <span
+                  key={code}
+                  className="inline-flex items-center gap-1 rounded bg-teal/10 px-2 py-0.5 text-xs text-navy"
+                >
+                  <span className="font-semibold">{code}:</span> {match.label}
+                </span>
+              ) : null
+            })}
+          </div>
+        )}
       </div>
 
       <div>

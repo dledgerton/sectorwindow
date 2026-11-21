@@ -4,34 +4,9 @@ import { useState } from "react"
 import { Nav } from "@/components/nav"
 import { formatCurrency } from "@/lib/utils"
 import { SaveSearchButton } from "@/components/save-search-button"
+import { NTEE_OPTIONS } from "@/lib/ntee"
 
 const STATE_OPTIONS = ["DC", "MD", "VA", "MN", "NY", "DE", "PA", "NJ"]
-
-const NTEE_OPTIONS: { code: string; label: string }[] = [
-  { code: "A", label: "Arts, Culture & Humanities" },
-  { code: "B", label: "Education" },
-  { code: "C", label: "Environment" },
-  { code: "E", label: "Health Care" },
-  { code: "F", label: "Mental Health & Crisis Intervention" },
-  { code: "G", label: "Disease & Disorder Research" },
-  { code: "H", label: "Medical Research" },
-  { code: "I", label: "Crime & Legal Services" },
-  { code: "J", label: "Employment" },
-  { code: "K", label: "Food, Agriculture & Nutrition" },
-  { code: "L", label: "Housing & Shelter" },
-  { code: "M", label: "Public Safety & Disaster Relief" },
-  { code: "N", label: "Recreation & Sports" },
-  { code: "O", label: "Youth Development" },
-  { code: "P", label: "Human Services" },
-  { code: "Q", label: "International & Foreign Affairs" },
-  { code: "R", label: "Civil Rights & Advocacy" },
-  { code: "S", label: "Community Improvement" },
-  { code: "T", label: "Philanthropy & Voluntarism" },
-  { code: "U", label: "Science & Technology" },
-  { code: "W", label: "Public & Societal Benefit" },
-  { code: "X", label: "Religion" },
-  { code: "Y", label: "Mutual Benefit" },
-]
 
 export default function SectorPulsePage() {
   const [states, setStates] = useState<string[]>(["DC", "MD", "VA"])
