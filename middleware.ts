@@ -12,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhooks/stripe',
+  '/dmv-pay-report',
 ])
 
 const isApiRoute = createRouteMatcher(['/api/query/(.*)', '/api/export/(.*)'])
