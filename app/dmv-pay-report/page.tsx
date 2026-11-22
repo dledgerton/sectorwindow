@@ -19,7 +19,7 @@ const MAIL_BODY = [
   "Thank you.",
 ].join("\n")
 
-const MAILTO = `mailto:david@davidedgertonjr.com?subject=${encodeURIComponent(
+const MAILTO = `mailto:david@dejsearch.com?subject=${encodeURIComponent(
   "DMV pay report"
 )}&body=${encodeURIComponent(MAIL_BODY)}`
 
