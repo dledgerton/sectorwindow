@@ -116,7 +116,7 @@ function MarketScanPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `dej-market-scan-${new Date().toISOString().slice(0, 10)}.csv`
+      a.download = `sectorwindow-market-scan-${new Date().toISOString().slice(0, 10)}.csv`
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {

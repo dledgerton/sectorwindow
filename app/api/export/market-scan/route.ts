@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="dej-market-scan-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="sectorwindow-market-scan-${new Date().toISOString().slice(0, 10)}.csv"`,
         'Cache-Control': 'no-store',
       },
     })
