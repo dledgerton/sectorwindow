@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as duckdb from 'duckdb-async'
 import { z } from 'zod'
 import { getDbPath } from '@/lib/db'
+import { toCSV } from '@/lib/csv'
 
 
 const Schema = z.object({
@@ -30,19 +31,6 @@ function buildOrderBy(sort: string | undefined, dir: 'asc' | 'desc'): string {
 }
 
 const CSV_LIMIT = 5000
-
-function escapeCSV(val: unknown): string {
-  if (val == null) return ''
-  const str = String(val)
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`
-  }
-  return str
-}
-
-function rowToCSV(row: Record<string, unknown>): string {
-  return Object.values(row).map(escapeCSV).join(',')
-}
 
 export async function GET(req: NextRequest) {
   const params = Object.fromEntries(req.nextUrl.searchParams)
@@ -105,9 +93,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse('No data', { status: 204 })
     }
 
-    const headers = Object.keys(rows[0])
-    const csvLines = [headers.join(','), ...rows.map(rowToCSV)]
-    const csv = csvLines.join('\n')
+    const csv = toCSV(rows)
 
     return new NextResponse(csv, {
       status: 200,

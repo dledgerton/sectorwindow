@@ -11,6 +11,7 @@ export default function HotListPage() {
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const toggleState = (v: string) =>
     setStates((prev) =>
@@ -35,6 +36,29 @@ export default function HotListPage() {
     }
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const params = new URLSearchParams({
+        states: states.join(","),
+        score_tiers: "imminent,high",
+      })
+      const res = await fetch(`/api/export/hot-list?${params}`)
+      if (!res.ok) throw new Error("Export failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `sectorwindow-hot-list-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error("Hot list export failed:", err)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const searchParams = { states: states.join(","), score_tiers: "imminent,high" }
   const searchName = `Hot List: ${states.join(", ")}`
 
@@ -51,12 +75,21 @@ export default function HotListPage() {
             </p>
           </div>
           {searched && (
-            <SaveSearchButton
-              name={searchName}
-              route="/hot-list"
-              params={searchParams}
-              resultCount={results.length}
-            />
+            <div className="flex items-center gap-3">
+              <SaveSearchButton
+                name={searchName}
+                route="/hot-list"
+                params={searchParams}
+                resultCount={results.length}
+              />
+              <button
+                onClick={handleExport}
+                disabled={exporting || results.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-teal bg-white px-4 py-2 text-sm font-medium text-navy transition hover:bg-teal/10 disabled:opacity-50"
+              >
+                {exporting ? "Exporting..." : "Export CSV"}
+              </button>
+            </div>
           )}
         </div>
 
