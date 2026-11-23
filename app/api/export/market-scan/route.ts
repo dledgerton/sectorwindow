@@ -10,7 +10,24 @@ const Schema = z.object({
   ntee_major: z.string().default('').transform(v => v ? v.split(',').map(s => s.trim().toUpperCase()) : []),
   rev_min: z.coerce.number().int().min(0).default(0),
   rev_max: z.coerce.number().int().max(999_999_999).default(999_999_999),
+  sort: z.enum(['name', 'location', 'sector', 'revenue', 'score', 'tenure']).optional(),
+  dir: z.enum(['asc', 'desc']).default('desc'),
 })
+
+const SORT_COLUMNS: Record<string, string[]> = {
+  name: ['LOWER(o.name)'],
+  location: ['o.state', 'LOWER(o.city)'],
+  sector: ['COALESCE(o.ntee_code, o.ntee_code_classified)'],
+  revenue: ['f.total_revenue'],
+  score: ['ts.score'],
+  tenure: ['ts.ceo_tenure_years'],
+}
+
+function buildOrderBy(sort: string | undefined, dir: 'asc' | 'desc'): string {
+  const cols = sort ? SORT_COLUMNS[sort] : undefined
+  const lead = cols ? cols.map(c => `${c} ${dir.toUpperCase()} NULLS LAST`).join(', ') + ', ' : ''
+  return `${lead}ts.score DESC NULLS LAST, f.total_revenue DESC NULLS LAST, o.ein`
+}
 
 const CSV_LIMIT = 5000
 
@@ -34,7 +51,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { states, ntee_major, rev_min, rev_max } = parsed.data
+  const { states, ntee_major, rev_min, rev_max, sort, dir } = parsed.data
   const dbPath = getDbPath()
 
   const statePlaceholders = states.map(() => '?').join(', ')
@@ -73,7 +90,7 @@ export async function GET(req: NextRequest) {
       o.state IN (${statePlaceholders})
       ${nteeClause}
       AND COALESCE(f.total_revenue, 0) BETWEEN ? AND ?
-    ORDER BY ts.score DESC NULLS LAST, f.total_revenue DESC NULLS LAST
+    ORDER BY ${buildOrderBy(sort, dir)}
     LIMIT ${CSV_LIMIT}
   `
 

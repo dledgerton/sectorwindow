@@ -88,7 +88,7 @@ export default function HotListPage() {
             {results.length.toLocaleString()} organizations on the hot list
           </p>
         )}
-        <OrgTable rows={results} showSignal />
+        <OrgTable rows={results} showSignal paginate />
       </main>
     </>
   )

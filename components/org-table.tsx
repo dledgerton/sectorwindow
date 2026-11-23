@@ -6,6 +6,8 @@ import { ScoreBadge } from "./score-badge"
 import { SignalChips } from "./signal-chips"
 import { SaveOrgButton } from "./save-org-button"
 import { nteeLabel } from "@/lib/ntee"
+import { SortableTh, SortState, useSort } from "./sortable"
+import { PagerBar, PagerNav, usePager } from "./pager"
 
 type OrgRow = {
   ein: string
@@ -80,13 +82,38 @@ function ScoreTooltip() {
   )
 }
 
+const ORG_ACCESSORS = {
+  name: (r: OrgRow) => r.name,
+  location: (r: OrgRow) => (r.state ? `${r.state} ${r.city ?? ""}` : null),
+  sector: (r: OrgRow) => r.ntee_code,
+  revenue: (r: OrgRow) => (r.total_revenue == null ? null : Number(r.total_revenue)),
+  score: (r: OrgRow) => (r.score == null ? null : Number(r.score)),
+  tenure: (r: OrgRow) => (r.ceo_tenure_years == null ? null : Number(r.ceo_tenure_years)),
+}
+
 export function OrgTable({
   rows,
   showSignal = false,
+  sort: controlledSort,
+  onSortChange,
+  paginate = false,
 }: {
   rows: OrgRow[]
   showSignal?: boolean
+  /** Pass both to sort on the server (paginated lists). Omit to sort in the browser. */
+  sort?: SortState
+  onSortChange?: (next: SortState) => void
+  /** Page the rows in the browser (25 / 50 / 100 per page). Ignored when sorting on the server. */
+  paginate?: boolean
 }) {
+  const local = useSort(rows, ORG_ACCESSORS)
+  const serverSide = !!onSortChange
+  const sort = serverSide ? controlledSort ?? null : local.sort
+  const setSort = serverSide ? onSortChange! : local.setSort
+  const sortedRows = serverSide ? rows : local.sorted
+  const { pageRows, pager } = usePager(sortedRows, `${sort?.key ?? ""}:${sort?.dir ?? ""}`)
+  const paging = paginate && !serverSide
+  const displayRows = paging ? pageRows : sortedRows
   if (!rows.length) {
     return (
       <p className="py-12 text-center text-sm text-muted-foreground">
@@ -95,27 +122,26 @@ export function OrgTable({
     )
   }
   return (
+    <>
+    {paging && <PagerBar pager={pager} noun="organizations" />}
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <th className="px-4 py-3">Organization</th>
-            <th className="px-4 py-3">Location</th>
-            <th className="px-4 py-3">Sector</th>
-            <th className="px-4 py-3 text-right">Revenue</th>
-            <th className="px-4 py-3">
-              <span className="inline-flex items-center">
-                Score
-                <ScoreTooltip />
-              </span>
-            </th>
-            <th className="px-4 py-3">CEO</th>
+            <SortableTh label="Organization" sortKey="name" sort={sort} onSort={setSort} />
+            <SortableTh label="Location" sortKey="location" sort={sort} onSort={setSort} />
+            <SortableTh label="Sector" sortKey="sector" sort={sort} onSort={setSort} />
+            <SortableTh label="Revenue" sortKey="revenue" sort={sort} onSort={setSort} defaultDir="desc" align="right" />
+            <SortableTh label="Score" sortKey="score" sort={sort} onSort={setSort} defaultDir="desc">
+              <ScoreTooltip />
+            </SortableTh>
+            <SortableTh label="CEO tenure" sortKey="tenure" sort={sort} onSort={setSort} defaultDir="desc" />
             <th className="px-4 py-3">Signals</th>
             <th className="px-4 py-3" title="Save to watchlist" />
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {displayRows.map((row) => (
             <tr
               key={row.ein}
               className="border-b border-border/50 transition hover:bg-muted/30"
@@ -184,5 +210,7 @@ export function OrgTable({
         </tbody>
       </table>
     </div>
+    {paging && <PagerNav pager={pager} />}
+    </>
   )
 }

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/nav"
 import { ScoreBadge } from "@/components/score-badge"
+import { SortableTh, useSort } from "@/components/sortable"
+import { PagerBar, PagerNav, usePager } from "@/components/pager"
 
 interface SavedSearch {
   id: string
@@ -50,6 +52,25 @@ export default function DashboardPage() {
   const [loadingOrgs, setLoadingOrgs] = useState(true)
   const [deletingSearchId, setDeletingSearchId] = useState<string | null>(null)
   const [deletingOrgEin, setDeletingOrgEin] = useState<string | null>(null)
+  const time = (v: string | null | undefined) => {
+    const t = v ? Date.parse(v) : NaN
+    return Number.isNaN(t) ? null : t
+  }
+  const searchSort = useSort(searches, {
+    name: (r) => r.name,
+    view: (r) => routeLabel(r.route),
+    count: (r) => r.lastCount,
+    lastRun: (r) => time(r.lastRun),
+    saved: (r) => time(r.savedAt),
+  })
+  const searchPage = usePager(searchSort.sorted, `${searchSort.sort?.key}:${searchSort.sort?.dir}`)
+  const orgSort = useSort(orgs, {
+    name: (r) => r.name,
+    location: (r) => (r.state ? `${r.state} ${r.city ?? ""}` : null),
+    signal: (r) => (r.score == null ? null : Number(r.score)),
+    saved: (r) => time(r.savedAt),
+  })
+  const orgPage = usePager(orgSort.sorted, `${orgSort.sort?.key}:${orgSort.sort?.dir}`)
 
   useEffect(() => {
     fetch("/api/user/saved-searches")
@@ -113,21 +134,23 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
+            <>
+            <PagerBar pager={searchPage.pager} noun="saved searches" />
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="rder-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">View</th>
+                    <SortableTh label="Name" sortKey="name" sort={searchSort.sort} onSort={searchSort.setSort} />
+                    <SortableTh label="View" sortKey="view" sort={searchSort.sort} onSort={searchSort.setSort} />
                     <th className="px-4 py-3">Filters</th>
-                    <th className="px-4 py-3 text-right">Last Count</th>
-                    <th className="px-4 py-3">Last Run</th>
-                    <th className="px-4 py-3">Saved</th>
+                    <SortableTh label="Last Count" sortKey="count" sort={searchSort.sort} onSort={searchSort.setSort} defaultDir="desc" align="right" />
+                    <SortableTh label="Last Run" sortKey="lastRun" sort={searchSort.sort} onSort={searchSort.setSort} defaultDir="desc" />
+                    <SortableTh label="Saved" sortKey="saved" sort={searchSort.sort} onSort={searchSort.setSort} defaultDir="desc" />
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {searches.map((s) => (
+                  {searchPage.pageRows.map((s) => (
                     <tr key={s.id} className="border-b border-border/50 transition hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium text-navy">{s.name}</td>
                       <td className="px-4 py-3">
@@ -162,6 +185,8 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+            <PagerNav pager={searchPage.pager} />
+            </>
           )}
         </section>
 
@@ -185,19 +210,21 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
+            <>
+            <PagerBar pager={orgPage.pager} noun="organizations" />
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3">Organization</th>
-                    <th className="px-4 py-3">Location</th>
-                    <th className="px-4 py-3">Signal</th>
-                    <th className="px-4 py-3">Saved</th>
+                    <SortableTh label="Organization" sortKey="name" sort={orgSort.sort} onSort={orgSort.setSort} />
+                    <SortableTh label="Location" sortKey="location" sort={orgSort.sort} onSort={orgSort.setSort} />
+                    <SortableTh label="Signal" sortKey="signal" sort={orgSort.sort} onSort={orgSort.setSort} defaultDir="desc" />
+                    <SortableTh label="Saved" sortKey="saved" sort={orgSort.sort} onSort={orgSort.setSort} defaultDir="desc" />
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {orgs.map((o) => (
+                  {orgPage.pageRows.map((o) => (
                     <tr key={o.ein} className="border-b border-border/50 transition hover:bg-muted/30">
                       <td className="px-4 py-3">
                         <Link href={`/org/${o.ein}`} className="font-medium text-navy hover:underline">
@@ -229,6 +256,8 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+            <PagerNav pager={orgPage.pager} />
+            </>
           )}
         </section>
       </main>

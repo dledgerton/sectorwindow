@@ -5,6 +5,7 @@ import { Nav } from "@/components/nav"
 import { formatCurrency } from "@/lib/utils"
 import { SaveSearchButton } from "@/components/save-search-button"
 import { NTEE_OPTIONS } from "@/lib/ntee"
+import { SortableTh, useSort } from "@/components/sortable"
 
 const STATE_OPTIONS = ["DC", "MD", "VA", "MN", "NY", "DE", "PA", "NJ"]
 
@@ -14,6 +15,15 @@ export default function SectorPulsePage() {
   const [years, setYears] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
+  const yearSort = useSort<any>(years, {
+    year: (r) => Number(r.year),
+    orgs: (r) => r.org_count == null ? null : Number(r.org_count),
+    avg: (r) => r.avg_revenue == null ? null : Number(r.avg_revenue),
+    median: (r) => r.median_revenue == null ? null : Number(r.median_revenue),
+    deficit: (r) => r.deficit_pct == null ? null : Number(r.deficit_pct),
+    critical: (r) => r.critical_count == null ? null : Number(r.critical_count),
+    high: (r) => r.high_count == null ? null : Number(r.high_count),
+  })
 
   const toggle = (arr: string[], v: string, set: (a: string[]) => void) =>
     set(arr.includes(v) ? arr.filter((s) => s !== v) : [...arr, v])
@@ -135,17 +145,17 @@ export default function SectorPulsePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-2">Year</th>
-                  <th className="px-4 py-2 text-right">Orgs</th>
-                  <th className="px-4 py-2 text-right">Avg Revenue</th>
-                  <th className="px-4 py-2 text-right">Median Revenue</th>
-                  <th className="px-4 py-2 text-right">Deficit %</th>
-                  <th className="px-4 py-2 text-right">Critical</th>
-                  <th className="px-4 py-2 text-right">High</th>
+                  <SortableTh label="Year" sortKey="year" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="asc" align="left" className="px-4 py-2" />
+                  <SortableTh label="Orgs" sortKey="orgs" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="desc" align="right" className="px-4 py-2" />
+                  <SortableTh label="Avg Revenue" sortKey="avg" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="desc" align="right" className="px-4 py-2" />
+                  <SortableTh label="Median Revenue" sortKey="median" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="desc" align="right" className="px-4 py-2" />
+                  <SortableTh label="Deficit %" sortKey="deficit" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="desc" align="right" className="px-4 py-2" />
+                  <SortableTh label="Critical" sortKey="critical" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="desc" align="right" className="px-4 py-2" />
+                  <SortableTh label="High" sortKey="high" sort={yearSort.sort} onSort={yearSort.setSort} defaultDir="desc" align="right" className="px-4 py-2" />
                 </tr>
               </thead>
               <tbody>
-                {years.map((y: any) => (
+                {yearSort.sorted.map((y: any) => (
                   <tr key={y.year} className="border-b border-border/50">
                     <td className="px-4 py-2 font-medium">{y.year}</td>
                     <td className="px-4 py-2 text-right">{y.org_count?.toLocaleString()}</td>

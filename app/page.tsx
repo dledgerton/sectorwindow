@@ -6,12 +6,17 @@ import { Nav } from "@/components/nav"
 import { OrgTable } from "@/components/org-table"
 import { FilterBar } from "@/components/filter-bar"
 import { SaveSearchButton } from "@/components/save-search-button"
+import type { SortState } from "@/components/sortable"
 import { Suspense } from "react"
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 
-function buildParams(filters: Record<string, string>, page: number, pageSize: number) {
+function buildParams(filters: Record<string, string>, page: number, pageSize: number, sort: SortState) {
   const params = new URLSearchParams(filters)
+  if (sort) {
+    params.set("sort", sort.key)
+    params.set("dir", sort.dir)
+  }
   params.set("limit", String(pageSize))
   params.set("offset", String((page - 1) * pageSize))
   return params
@@ -41,6 +46,12 @@ function MarketScanPage() {
   })
   const [page, setPage] = useState(Number(searchParams.get("page") ?? 1))
   const [pageSize, setPageSize] = useState(Number(searchParams.get("pageSize") ?? 50))
+  const initialSort = searchParams.get("sort")
+  const [sort, setSort] = useState<SortState>(
+    initialSort
+      ? { key: initialSort, dir: searchParams.get("dir") === "asc" ? "asc" : "desc" }
+      : null
+  )
   const [results, setResults] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -51,7 +62,7 @@ function MarketScanPage() {
   const fetchResults = useCallback(async () => {
     setLoading(true)
     try {
-      const params = buildParams(filters, page, pageSize)
+      const params = buildParams(filters, page, pageSize, sort)
       const res = await fetch(`/api/query/market-scan?${params}`)
       if (res.status === 402) {
         window.location.href = '/pricing'
@@ -66,7 +77,7 @@ function MarketScanPage() {
     } finally {
       setLoading(false)
     }
-  }, [filters, page, pageSize])
+  }, [filters, page, pageSize, sort])
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -74,8 +85,12 @@ function MarketScanPage() {
       page: String(page),
       pageSize: String(pageSize),
     })
+    if (sort) {
+      params.set("sort", sort.key)
+      params.set("dir", sort.dir)
+    }
     router.replace(`?${params}`, { scroll: false })
-  }, [filters, page, pageSize, router])
+  }, [filters, page, pageSize, sort, router])
 
   useEffect(() => {
     fetchResults()
@@ -86,10 +101,15 @@ function MarketScanPage() {
     setPage(1)
   }
 
+  function handleSortChange(next: SortState) {
+    setSort(next)
+    setPage(1)
+  }
+
   async function handleExport() {
     setExporting(true)
     try {
-      const params = buildParams(filters, 1, 5000)
+      const params = buildParams(filters, 1, 5000, sort)
       const res = await fetch(`/api/export/market-scan?${params}`)
       if (!res.ok) throw new Error("Export failed")
       const blob = await res.blob()
@@ -173,7 +193,7 @@ function MarketScanPage() {
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-navy border-t-transparent" />
           </div>
         ) : (
-          <OrgTable rows={results} showSignal />
+          <OrgTable rows={results} showSignal sort={sort} onSortChange={handleSortChange} />
         )}
 
         {!loading && totalPages > 1 && (
